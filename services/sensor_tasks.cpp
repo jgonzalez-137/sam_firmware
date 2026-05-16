@@ -56,13 +56,13 @@ static void ppg_task(void* pv)
 bool start_sensor_tasks(Mpu6050Driver* imu, Max30102Driver* ppg, core::EventBus* bus)
 {
     if (!bus) return false;
-    TaskParams* params = new TaskParams();
-    params->imu = imu;
-    params->ppg = ppg;
-    params->bus = bus;
+    static TaskParams params;
+    params.imu = imu;
+    params.ppg = ppg;
+    params.bus = bus;
 
-    BaseType_t r1 = xTaskCreate(imu_task, "imu_task", 4096, params, 5, nullptr);
-    BaseType_t r2 = xTaskCreate(ppg_task, "ppg_task", 4096, params, 5, nullptr);
+    BaseType_t r1 = xTaskCreate(imu_task, "imu_task", 4096, &params, 5, nullptr);
+    BaseType_t r2 = xTaskCreate(ppg_task, "ppg_task", 4096, &params, 5, nullptr);
     if (r1 != pdPASS || r2 != pdPASS) {
         ESP_LOGE(TAG, "Failed to create sensor tasks");
         return false;

@@ -9,6 +9,7 @@
 #include "drivers/display_gc9a01/display_gc9a01.h"
 #include "core/event_bus.h"
 #include "services/sensor_tasks.h"
+#include "services/anomaly_detector.h"
 
 static const char *TAG = "SAM";
 
@@ -46,20 +47,12 @@ extern "C" void app_main(void)
         ESP_LOGW(TAG, "Failed to start sensor tasks");
     }
 
-    // Consumidor simple: loguear eventos
-    core::Event ev;
+    // Start anomaly detector task (consume event bus and trigger local alarms)
+    if (!start_anomaly_detector_task(&bus_events)) {
+        ESP_LOGW(TAG, "Failed to start anomaly detector task");
+    }
+
     while (true) {
-        if (bus_events.consume(ev, pdMS_TO_TICKS(1000))) {
-            switch (ev.type) {
-                case core::EventType::IMU_SAMPLE:
-                    ESP_LOGI(TAG, "IMU: ax=%.3f ay=%.3f az=%.3f", ev.payload.imu.ax, ev.payload.imu.ay, ev.payload.imu.az);
-                    break;
-                case core::EventType::PPG_SAMPLE:
-                    ESP_LOGI(TAG, "PPG: IR=%u RED=%u", (unsigned)ev.payload.ppg.ir, (unsigned)ev.payload.ppg.red);
-                    break;
-                default:
-                    break;
-            }
-        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
